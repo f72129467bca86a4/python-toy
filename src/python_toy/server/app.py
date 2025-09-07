@@ -6,8 +6,12 @@ from fastapi import FastAPI
 from python_toy.server.infra import health as health_module
 from python_toy.server.infra.error import middleware as error_middleware
 from python_toy.server.infra import logging as logging_module
-from python_toy.server.petstore.api import router as pet_router
+from python_toy.server.petstore.pet_api import router as pet_router
+from python_toy.server.petstore.category_api import router as category_router
+from python_toy.server.petstore.tag_api import router as tag_router
+from python_toy.server.petstore.user_api import router as user_router
 from python_toy.server.infra import container as container_module
+from python_toy.server.infra.database import create_tables, engine
 
 
 def create_app() -> FastAPI:
@@ -22,8 +26,11 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
-        # expose container via app.state if needed elsewhere
         app.state.container = container
+
+        # Create tables
+        await create_tables()
+
         health_module.set_started()
         logger.info("lifecycle.started")
 
@@ -32,9 +39,13 @@ def create_app() -> FastAPI:
         # Stop accepting traffic on shutdown
         health_module.set_readiness_state(False)
         logger.info("lifecycle.shutdown.start")
+
         # cleanup DI resources/wiring
         with contextlib.suppress(Exception):
             container.shutdown_resources()
+        # dispose SQLAlchemy engine to ensure all pooled connections are closed
+        with contextlib.suppress(Exception):
+            await engine.dispose()
 
     app = FastAPI(
         title="python-toy server",
@@ -46,9 +57,10 @@ def create_app() -> FastAPI:
     error_middleware.setup(app)
 
     app.include_router(health_module.router)
-    app.include_router(
-        pet_router,
-    )
+    app.include_router(pet_router)
+    app.include_router(category_router)
+    app.include_router(tag_router)
+    app.include_router(user_router)
 
     @app.get("/", tags=["meta"])
     async def root() -> dict[str, str]:
