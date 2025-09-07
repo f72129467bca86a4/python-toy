@@ -20,6 +20,10 @@ uv run uvicorn --reload --port 8080 python_toy.server.app:create_app
 uv run server
 ```
 
+DI 컨테이너(`Container`)는 `create_app()`에서 생성되며, FastAPI `app.state.container`에 노출됩니다. 라우터/서비스는 Request를 통해 컨테이너에서 인스턴스를 꺼내 사용한다.
+
+애플리케이션 라이프사이클은 FastAPI lifespan 훅으로 관리되며, 시작 시 health startup 플래그를 올리고, 종료 시 readiness를 내린 뒤 DI 리소스를 정리한다.
+
 ## 로컬 PC 설정
 
 ### 환경변수 구성
