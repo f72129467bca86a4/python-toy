@@ -1,0 +1,73 @@
+include = ["pyproject.toml", "src/**/*.py", "scripts/**/*.py"]
+src = ["src"]
+
+target-version = 'py312'
+
+line-length = 120
+indent-width = 4
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+docstring-code-format = false
+
+[lint]
+select = [
+    "RUF001", # ambiguous-unicode-character-string
+    "RUF002", # ambiguous-unicode-character-docstring
+    "RUF003", # ambiguous-unicode-character-comment
+    "PLE25", # invalid-character-*
+
+    "A", # flake8-builtins
+    "B", # flake8-bugbear
+    "N", # pep8-naming
+
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    "C4", # flake8-comprehensions
+
+    "EM", # flake8-errmsg
+    "LOG", # flake8-logging
+    "G", # flake8-logging-format
+    "ANN", # flake8-annotations
+    "FA", # flake8-future-annotations
+    "PIE", # flake8-pie
+    "SIM", # flake8-simplify
+    "RET", # flake8-return
+    "PTH", # flake8-use-pathlib
+    "DTZ", # flake8-datetimez
+    "ASYNC", # flake8-async
+    "T100", # flake8-debugger
+    "PT", # flake8-pytest-style
+
+    "PERF", # Perflint
+    "UP", # pyupgrade
+    "FURB", # refurb
+    "PL", # Pylint
+
+    "FAST", # FastAPI
+
+    "D2", "D3", "D4", # pydocstyle
+]
+
+ignore = [
+    "E501", # line-too-long
+    "D202", # No blank lines allowed after function docstring
+    "UP035", # Import from `collections.abc` instead: `Iterable`
+    "PLR0913", # Too many arguments
+    "N818", #  Exception name `{name}` should be named with an Error suffix
+]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["A", "B", "C", "D", "E", "F"]
+unfixable = []
+
+[lint.per-file-ignores]
+"__init__.py" = ["E402"]
+"src/tests/**/*.py" = ["ANN", "PLR2004"]
+
+[lint.pydocstyle]
+convention = "pep257"
