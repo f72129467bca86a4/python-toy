@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #  v5.0.0
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6 # 6.6.1
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --all-groups --locked
+
+      - id: ruff
+        name: Ruff check
+        shell: bash
+        run: |
+          set -eu -o pipefail
+          mkdir -p reports
+          uv run ruff check 2>&1 | tee reports/ruff.txt
+          ruff_ec=${PIPESTATUS[0]}
+          uv run ruff check --output-format=sarif -o reports/ruff.sarif || true
+          echo "exit_code=${ruff_ec}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ruff-report
+          path: reports/
+          if-no-files-found: error
+
+  type-check:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #  v5.0.0
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6 # 6.6.1
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --all-groups --locked
+
+      - id: mypy
+        name: Run mypy
+        shell: bash
+        run: |
+          set -eu -o pipefail
+          mkdir -p reports
+          uv run mypy 2>&1 | tee reports/mypy.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload mypy artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mypy-report
+          path: reports/
+          if-no-files-found: error
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #  v5.0.0
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6 # 6.6.1
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --all-groups --locked
+
+      - id: test
+        name: Run tests
+        shell: bash
+        run: |
+          set -eu -o pipefail
+          mkdir -p reports
+          uv run pytest -q --junitxml=reports/pytest.xml 2>&1 | tee reports/pytest.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pytest-report
+          path: reports/
+          if-no-files-found: error
