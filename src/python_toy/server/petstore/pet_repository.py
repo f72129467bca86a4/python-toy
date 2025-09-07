@@ -5,22 +5,21 @@ from typing import cast, List
 import json
 
 from sqlalchemy import select, update, delete, func
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from python_toy.server.infra.error import EntityNotFoundException
 from .models import PetCreate, PetUpdate
 from pydantic.experimental.missing_sentinel import MISSING
 from python_toy.server.petstore.db_models import CategoryEntity, PetEntity, UserEntity, PetTagAssociation
-from .base_repository import BaseRepository
+from .base_repository import BaseRepository, SessionSupplier
 from .query_options import PetQueryOptions
 
 from python_toy.server.petstore.id_type import PetId, CategoryId, UserId
 
 
 class DBPetRepository(BaseRepository[PetEntity, PetCreate, PetEntity]):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(session, PetEntity)
+    def __init__(self, session_supplier: SessionSupplier) -> None:
+        super().__init__(PetEntity, session_supplier)
 
     def _create_db_entity(self, payload: PetCreate) -> PetEntity:
         return PetEntity(

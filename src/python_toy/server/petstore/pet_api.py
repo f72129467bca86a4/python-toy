@@ -6,22 +6,16 @@ from fastapi import APIRouter, Depends, Request, Query
 from starlette.status import HTTP_201_CREATED
 from python_toy.server.model.common import PageResponse, EmptyResponse
 from .models import Pet, PetCreate, PetUpdate
-from python_toy.server.infra.container import Container
 from fastapi_utils.cbv import cbv
 from .pet_service import PetService
-from sqlalchemy.ext.asyncio import AsyncSession
-from python_toy.server.infra.database import get_db
 from python_toy.server.petstore.id_type import PetId
 
 
-def _pet_service_dep(request: Request, session: Annotated[AsyncSession, Depends(get_db)]) -> PetService:
+def _pet_service_dep(request: Request) -> PetService:
+    from python_toy.server.infra.container import Container
+
     container: Container = request.app.state.container
-    # Construct dependencies sharing the same DB session
-    repo = container.pet_repository(session=session)
-    tag_repo = container.tag_repository(session=session)
-    category_repo = container.category_repository(session=session)
-    user_repo = container.user_repository(session=session)
-    return container.pet_service(repo=repo, tag_repo=tag_repo, category_repo=category_repo, user_repo=user_repo)
+    return container.pet_service()
 
 
 router = APIRouter(tags=["pets"])

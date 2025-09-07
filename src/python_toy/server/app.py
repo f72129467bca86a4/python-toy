@@ -6,12 +6,13 @@ from fastapi import FastAPI
 from python_toy.server.infra import health as health_module
 from python_toy.server.infra.error import middleware as error_middleware
 from python_toy.server.infra import logging as logging_module
+from python_toy.server.infra.middleware import SessionMiddleware
 from python_toy.server.petstore.pet_api import router as pet_router
 from python_toy.server.petstore.category_api import router as category_router
 from python_toy.server.petstore.tag_api import router as tag_router
 from python_toy.server.petstore.user_api import router as user_router
 from python_toy.server.infra import container as container_module
-from python_toy.server.infra.database import create_tables, engine
+from python_toy.server.infra.database import create_tables
 
 
 def create_app() -> FastAPI:
@@ -28,8 +29,9 @@ def create_app() -> FastAPI:
     async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.container = container
 
-        # Create tables
-        await create_tables()
+        # Create tables using engine from container
+        engine = container.db_engine()
+        await create_tables(engine)
 
         health_module.set_started()
         logger.info("lifecycle.started")
@@ -55,6 +57,10 @@ def create_app() -> FastAPI:
     )
 
     error_middleware.setup(app)
+
+    # Add session middleware with session factory from container
+    session_factory = container.db_session_factory()
+    app.add_middleware(SessionMiddleware, session_factory=session_factory)
 
     app.include_router(health_module.router)
     app.include_router(pet_router)

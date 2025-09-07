@@ -3,17 +3,16 @@ from __future__ import annotations
 import uuid
 
 from sqlalchemy import delete, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from python_toy.server.infra.error import EntityNotFoundException, DuplicateEntityException
 from python_toy.server.petstore.db_models import UserEntity
 from .models import UserCreate
-from .base_repository import BaseRepository
+from .base_repository import BaseRepository, SessionSupplier
 
 
 class UserRepository(BaseRepository[UserEntity, UserCreate, UserEntity]):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(session, UserEntity)
+    def __init__(self, session_supplier: SessionSupplier) -> None:
+        super().__init__(UserEntity, session_supplier)
 
     def _create_db_entity(self, payload: UserCreate) -> UserEntity:
         return UserEntity(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 import re
-from typing import TypeVar
+from typing import Callable, TypeVar
 
 from pydantic import BaseModel
 from sqlalchemy import delete, select
@@ -20,14 +20,22 @@ T = TypeVar("T", bound=BaseModel)
 TCreate = TypeVar("TCreate", bound=BaseModel)
 TDB = TypeVar("TDB")
 
+# Session supplier type (like Java's Supplier<AsyncSession>)
+SessionSupplier = Callable[[], AsyncSession]
+
 
 class BaseRepository[T, TCreate, TDB](ABC):
     """Base repository with common CRUD operations."""
 
-    def __init__(self, session: AsyncSession, db_model: type[TDB]) -> None:
-        self.session = session
+    def __init__(self, db_model: type[TDB], session_supplier: SessionSupplier) -> None:
         self.db_model = db_model
         self.entity_type = db_model.__name__
+        self._session_supplier = session_supplier
+
+    @property
+    def session(self) -> AsyncSession:
+        """Get the current database session from supplier."""
+        return self._session_supplier()
 
     async def ensure_foreign_key_exists(self, table: type, id_value: str, field_name: str) -> None:
         """Validate that a foreign key reference exists.

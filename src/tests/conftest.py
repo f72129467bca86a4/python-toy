@@ -52,6 +52,12 @@ async def db_session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, N
 
 
 @pytest.fixture
+def session_supplier(db_session: AsyncSession):
+    """Create session supplier for repository tests."""
+    return lambda: db_session
+
+
+@pytest.fixture
 def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     """Create FastAPI test client with isolated in-memory DB."""
     # Ensure app uses an in-memory sqlite for full isolation
@@ -64,4 +70,4 @@ def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
         yield c
 
 
-__all__ = ("event_loop", "test_engine", "db_session", "client")
+__all__ = ("event_loop", "test_engine", "db_session", "session_supplier", "client")

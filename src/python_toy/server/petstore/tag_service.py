@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from python_toy.server.model.common import PageResponse
-from python_toy.server.infra.database import transactional
+from python_toy.server.infra.transaction import transactional
 from .models import Tag, TagCreate
 from .tag_repository import TagRepository
 from .mappers import TagMapper

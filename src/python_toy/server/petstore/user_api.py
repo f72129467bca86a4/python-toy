@@ -5,10 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi_utils.cbv import cbv
 from starlette.status import HTTP_201_CREATED
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from python_toy.server.infra.database import get_db
-from python_toy.server.infra.container import Container
 from python_toy.server.model.common import EmptyResponse, PageResponse
 from .user_service import UserService
 from .models import User, UserCreate
@@ -18,10 +15,11 @@ from python_toy.server.petstore.id_type import UserId
 router = APIRouter(tags=["users"])
 
 
-def _service_dep(request: Request, session: Annotated[AsyncSession, Depends(get_db)]) -> UserService:
+def _service_dep(request: Request) -> UserService:
+    from python_toy.server.infra.container import Container
+
     container: Container = request.app.state.container
-    repo = container.user_repository(session=session)
-    return container.user_service(repo=repo)
+    return container.user_service()
 
 
 @cbv(router)

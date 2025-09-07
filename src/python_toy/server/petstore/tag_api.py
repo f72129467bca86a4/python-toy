@@ -5,10 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi_utils.cbv import cbv
 from starlette.status import HTTP_201_CREATED
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from python_toy.server.infra.database import get_db
-from python_toy.server.infra.container import Container
 from python_toy.server.model.common import EmptyResponse, PageResponse
 from .tag_service import TagService
 from .models import Tag, TagCreate
@@ -18,10 +15,11 @@ from python_toy.server.petstore.id_type import TagId
 router = APIRouter(tags=["tags"])
 
 
-def _service_dep(request: Request, session: Annotated[AsyncSession, Depends(get_db)]) -> TagService:
+def _service_dep(request: Request) -> TagService:
+    from python_toy.server.infra.container import Container
+
     container: Container = request.app.state.container
-    repo = container.tag_repository(session=session)
-    return container.tag_service(repo=repo)
+    return container.tag_service()
 
 
 @cbv(router)

@@ -3,17 +3,16 @@ from __future__ import annotations
 import uuid
 
 from sqlalchemy import delete, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from python_toy.server.infra.error import EntityNotFoundException
 from python_toy.server.petstore.db_models import CategoryEntity
 from .models import CategoryCreate
-from .base_repository import BaseRepository
+from .base_repository import BaseRepository, SessionSupplier
 
 
 class CategoryRepository(BaseRepository[CategoryEntity, CategoryCreate, CategoryEntity]):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(session, CategoryEntity)
+    def __init__(self, session_supplier: SessionSupplier) -> None:
+        super().__init__(CategoryEntity, session_supplier)
 
     def _create_db_entity(self, payload: CategoryCreate) -> CategoryEntity:
         return CategoryEntity(id=str(uuid.uuid4()), name=payload.name)

@@ -5,20 +5,18 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi_utils.cbv import cbv
 from starlette.status import HTTP_201_CREATED
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from python_toy.server.infra.database import get_db
-from python_toy.server.infra.container import Container
 from python_toy.server.model.common import EmptyResponse, PageResponse
 from .category_service import CategoryService
 from .models import Category, CategoryCreate
 from python_toy.server.petstore.id_type import CategoryId
 
 
-def _service_dep(request: Request, session: Annotated[AsyncSession, Depends(get_db)]) -> CategoryService:
+def _service_dep(request: Request) -> CategoryService:
+    from python_toy.server.infra.container import Container
+
     container: Container = request.app.state.container
-    repo = container.category_repository(session=session)
-    return container.category_service(repo=repo)
+    return container.category_service()
 
 
 router = APIRouter(tags=["categories"])

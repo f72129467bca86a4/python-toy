@@ -4,17 +4,16 @@ import uuid
 from typing import Iterable, List
 
 from sqlalchemy import func, select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from python_toy.server.infra.error import EntityNotFoundException, DuplicateEntityException
 from python_toy.server.petstore.db_models import TagEntity
 from .models import TagCreate
-from .base_repository import BaseRepository
+from .base_repository import BaseRepository, SessionSupplier
 
 
 class TagRepository(BaseRepository[TagEntity, TagCreate, TagEntity]):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(session, TagEntity)
+    def __init__(self, session_supplier: SessionSupplier) -> None:
+        super().__init__(TagEntity, session_supplier)
 
     def _create_db_entity(self, payload: TagCreate) -> TagEntity:
         return TagEntity(id=str(uuid.uuid4()), name=payload.name)

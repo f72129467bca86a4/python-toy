@@ -1,7 +1,6 @@
 """Unit tests for Petstore repositories and services."""
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from python_toy.server.infra.error import EntityNotFoundException
 from python_toy.server.infra.error.exceptions import DuplicateEntityException, ForeignKeyViolationException
@@ -21,9 +20,9 @@ from python_toy.server.petstore.user_repository import UserRepository
 class TestCategoryRepository:
     """Test CategoryRepository unit operations."""
 
-    async def test_create_and_get_category(self, db_session: AsyncSession) -> None:
+    async def test_create_and_get_category(self, session_supplier) -> None:
         """Test creating and retrieving a category."""
-        repo = CategoryRepository(db_session)
+        repo = CategoryRepository(session_supplier)
         payload = CategoryCreate(name="Test Category")
 
         # Create
@@ -38,9 +37,9 @@ class TestCategoryRepository:
         assert retrieved.name == "Test Category"
         assert retrieved.id == category_id
 
-    async def test_list_categories_with_pagination(self, db_session: AsyncSession) -> None:
+    async def test_list_categories_with_pagination(self, session_supplier) -> None:
         """Test listing categories with pagination."""
-        repo = CategoryRepository(db_session)
+        repo = CategoryRepository(session_supplier)
 
         # Create test data
         created_categories = []
@@ -58,9 +57,9 @@ class TestCategoryRepository:
         assert total_page2 == 3
         assert len(categories_page2) == 1
 
-    async def test_delete_category(self, db_session: AsyncSession) -> None:
+    async def test_delete_category(self, session_supplier) -> None:
         """Test deleting a category."""
-        repo = CategoryRepository(db_session)
+        repo = CategoryRepository(session_supplier)
         category = await repo.create(CategoryCreate(name="To Delete"))
 
         # Delete
@@ -74,9 +73,9 @@ class TestCategoryRepository:
 class TestTagRepository:
     """Test TagRepository unit operations."""
 
-    async def test_create_and_get_tag(self, db_session: AsyncSession) -> None:
+    async def test_create_and_get_tag(self, session_supplier) -> None:
         """Test creating and retrieving a tag."""
-        repo = TagRepository(db_session)
+        repo = TagRepository(session_supplier)
         payload = TagCreate(name="Test Tag")
 
         # Create
@@ -89,9 +88,9 @@ class TestTagRepository:
         assert retrieved is not None
         assert retrieved.name == "Test Tag"
 
-    async def test_ensure_exist_by_names(self, db_session: AsyncSession) -> None:
+    async def test_ensure_exist_by_names(self, session_supplier) -> None:
         """Test ensuring tags exist by names (create if not exists)."""
-        repo = TagRepository(db_session)
+        repo = TagRepository(session_supplier)
 
         # First call - should create new tags
         tags = await repo.ensure_exist_by_names(["new_tag1", "new_tag2"])
@@ -113,9 +112,9 @@ class TestTagRepository:
 class TestUserRepository:
     """Test UserRepository unit operations."""
 
-    async def test_create_and_get_user(self, db_session: AsyncSession) -> None:
+    async def test_create_and_get_user(self, session_supplier) -> None:
         """Test creating and retrieving a user."""
-        repo = UserRepository(db_session)
+        repo = UserRepository(session_supplier)
         payload = UserCreate(
             username="testuser", first_name="Test", last_name="User", email="test@example.com", password="password123"
         )
@@ -135,9 +134,9 @@ class TestUserRepository:
 class TestPetRepository:
     """Test PetRepository unit operations."""
 
-    async def test_create_simple_pet(self, db_session: AsyncSession) -> None:
+    async def test_create_simple_pet(self, session_supplier) -> None:
         """Test creating a simple pet without relationships."""
-        repo = DBPetRepository(db_session)
+        repo = DBPetRepository(session_supplier)
         payload = PetCreate(
             name="Simple Pet", status="available", photo_urls=["http://example.com/photo.jpg"], tags=["simple"]
         )
@@ -148,14 +147,11 @@ class TestPetRepository:
         assert pet.id is not None
         # Note: tags are handled separately in repository layer and require service layer for proper mapping
 
-    async def test_create_pet_with_relationships(self, db_session: AsyncSession) -> None:
+    async def test_create_pet_with_relationships(self, session_supplier) -> None:
         """Test creating a pet with category and owner relationships."""
         # Setup dependencies
-        category_repo = CategoryRepository(db_session)
-        user_repo = UserRepository(db_session)
-
-        category_repo = CategoryRepository(db_session)
-        user_repo = UserRepository(db_session)
+        category_repo = CategoryRepository(session_supplier)
+        user_repo = UserRepository(session_supplier)
 
         category = await category_repo.create(CategoryCreate(name="Test Category"))
         user = await user_repo.create(
@@ -169,7 +165,7 @@ class TestPetRepository:
         )
 
         # Create pet with relationships
-        repo = DBPetRepository(db_session)
+        repo = DBPetRepository(session_supplier)
         payload = PetCreate(
             name="Pet with Relations", status="available", category_id=category.id, owner_id=user.id, tags=["family"]
         )
@@ -179,9 +175,9 @@ class TestPetRepository:
         assert pet.category_id == category.id
         assert pet.owner_id == user.id
 
-    async def test_pet_crud_operations(self, db_session: AsyncSession) -> None:
+    async def test_pet_crud_operations(self, session_supplier) -> None:
         """Test basic pet CRUD operations."""
-        repo = DBPetRepository(db_session)
+        repo = DBPetRepository(session_supplier)
 
         # Create
         pet = await repo.create(PetCreate(name="CRUD Pet", status="available"))
@@ -203,13 +199,13 @@ class TestPetRepository:
 class TestPetService:
     """Test PetService business logic."""
 
-    async def test_service_create_pet_with_tag_creation(self, db_session: AsyncSession) -> None:
+    async def test_service_create_pet_with_tag_creation(self, session_supplier) -> None:
         """Test service layer creates tags automatically."""
         # Setup repositories
-        pet_repo = DBPetRepository(db_session)
-        tag_repo = TagRepository(db_session)
-        category_repo = CategoryRepository(db_session)
-        user_repo = UserRepository(db_session)
+        pet_repo = DBPetRepository(session_supplier)
+        tag_repo = TagRepository(session_supplier)
+        category_repo = CategoryRepository(session_supplier)
+        user_repo = UserRepository(session_supplier)
 
         service = PetService(pet_repo, tag_repo, category_repo, user_repo)
 
@@ -228,9 +224,9 @@ class TestPetService:
 class TestRepositoryExceptionHandling:
     """Test exception handling in repository layer."""
 
-    async def test_duplicate_entity_in_repository(self, db_session: AsyncSession) -> None:
+    async def test_duplicate_entity_in_repository(self, session_supplier) -> None:
         """Test that duplicate entity creation raises DuplicateEntityException."""
-        repo = CategoryRepository(db_session)
+        repo = CategoryRepository(session_supplier)
 
         # Create first category
         payload = CategoryCreate(name="Unique Category")
@@ -245,9 +241,9 @@ class TestRepositoryExceptionHandling:
         assert exception.field == "name"
         assert "already exists" in str(exception)
 
-    async def test_foreign_key_violation_in_repository(self, db_session: AsyncSession) -> None:
+    async def test_foreign_key_violation_in_repository(self, session_supplier) -> None:
         """Test that foreign key violations raise ForeignKeyViolationException."""
-        repo = DBPetRepository(db_session)
+        repo = DBPetRepository(session_supplier)
 
         # Try to create pet with non-existent category
         payload = PetCreate(name="Test Pet", status="available", category_id="non-existent-category-id")

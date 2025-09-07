@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from python_toy.server.model.common import PageResponse
-from python_toy.server.infra.database import transactional
+from python_toy.server.infra.transaction import transactional
 from .models import Category, CategoryCreate
-from .category_repository import CategoryRepository
 from .mappers import CategoryMapper
+
+if TYPE_CHECKING:
+    from .category_repository import CategoryRepository
 
 
 class CategoryService:

@@ -1,6 +1,4 @@
-"""Tests for query optimization and performance features."""
-
-from sqlalchemy.ext.asyncio import AsyncSession
+"""Test query optimization patterns for repository and service layers."""
 
 from python_toy.server.petstore.models import PetCreate
 from python_toy.server.petstore.pet_repository import DBPetRepository
@@ -44,9 +42,9 @@ class TestQueryOptions:
         assert tags_options.include_owner is False
         assert tags_options.include_tags is True
 
-    async def test_pet_repository_query_options(self, db_session: AsyncSession) -> None:
+    async def test_pet_repository_query_options(self, session_supplier) -> None:
         """Test repository query options integration."""
-        repo = DBPetRepository(db_session)
+        repo = DBPetRepository(session_supplier)
 
         # Create a test pet
         payload = PetCreate(name="Query Test Pet", status="available")
@@ -68,13 +66,13 @@ class TestQueryOptions:
         assert category_options.include_owner is False
         assert category_options.include_tags is False
 
-    async def test_pet_service_optimized_operations(self, db_session: AsyncSession) -> None:
+    async def test_pet_service_optimized_operations(self, session_supplier) -> None:
         """Test service layer optimization features."""
         # Setup all repositories
-        pet_repo = DBPetRepository(db_session)
-        tag_repo = TagRepository(db_session)
-        category_repo = CategoryRepository(db_session)
-        user_repo = UserRepository(db_session)
+        pet_repo = DBPetRepository(session_supplier)
+        tag_repo = TagRepository(session_supplier)
+        category_repo = CategoryRepository(session_supplier)
+        user_repo = UserRepository(session_supplier)
 
         service = PetService(pet_repo, tag_repo, category_repo, user_repo)
 

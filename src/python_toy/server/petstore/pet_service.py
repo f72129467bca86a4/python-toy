@@ -8,7 +8,7 @@ from .user_repository import UserRepository
 from .query_options import PetQueryOptions
 from pydantic.experimental.missing_sentinel import MISSING
 from python_toy.server.petstore.id_type import PetId
-from python_toy.server.infra.database import transactional
+from python_toy.server.infra.transaction import transactional
 
 # Import mappers for domain conversion
 from python_toy.server.petstore.mappers import PetMapper
