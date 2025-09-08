@@ -58,11 +58,12 @@ ignore = [
     "D202", # No blank lines allowed after function docstring
     "UP035", # Import from `collections.abc` instead: `Iterable`
     "PLR0913", # Too many arguments
+    "PLC0415", # `import` should be at the top-level of a file
     "N818", #  Exception name `{name}` should be named with an Error suffix
 ]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
-fixable = ["A", "B", "C", "D", "E", "F"]
+fixable = ["A", "B", "C", "D", "E", "F", "W"]
 unfixable = []
 
 [lint.per-file-ignores]

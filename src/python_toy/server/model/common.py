@@ -23,4 +23,16 @@ class ListResponse[T](BaseModel):
         return ListResponse(items=items)
 
 
-__all__ = ["EmptyResponse", "ListResponse"]
+class PageResponse[T](ListResponse[T]):
+    model_config = ConfigDict(frozen=True)
+
+    total: int
+    page: int
+    size: int
+
+    @classmethod
+    def create(cls, items: list[T], total: int, page: int, size: int) -> "PageResponse[T]":
+        return cls(items=items, total=total, page=page, size=size)
+
+
+__all__ = ["EmptyResponse", "ListResponse", "PageResponse"]

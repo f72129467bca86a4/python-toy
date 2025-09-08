@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 
     env: Literal["local", "dev", "prod"] = "local"
     logging: LoggingConfig = LoggingConfig()
+    database_url: str = "sqlite+aiosqlite:///./petstore.db"
 
 
 @functools.cache
