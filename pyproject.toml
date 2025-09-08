@@ -16,9 +16,7 @@ dependencies = [
     "dependency-injector>=4.43.0",
     "fastapi-utils>=0.8.0",
     "typing-inspect>=0.9.0",
-    "sqlalchemy>=2.0.43,<2.1",
-    "aiosqlite>=0.21.0",
-    "greenlet>=3.2.4,<3.3",
+    "sqlalchemy[mypy,asyncio,aiosqlite]>=2.0.43,<2.1",
 ]
 
 [dependency-groups]

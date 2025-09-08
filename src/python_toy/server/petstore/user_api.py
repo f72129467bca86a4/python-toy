@@ -24,12 +24,11 @@ def _service_dep(request: Request) -> UserService:
 
 @cbv(router)
 class UserRoutes:
-    svc: UserService = Depends(_service_dep)
+    _service: UserService = Depends(_service_dep)
 
     @router.post("/v1/users", status_code=HTTP_201_CREATED)
     async def create(self, payload: UserCreate) -> User:
-        """Create a new user."""
-        return await self.svc.create(payload)
+        return await self._service.create(payload)
 
     @router.get("/v1/users")
     async def list(
@@ -37,18 +36,15 @@ class UserRoutes:
         page: Annotated[int, Query(ge=1)] = 1,
         size: Annotated[int, Query(ge=1, le=100)] = 10,
     ) -> PageResponse[User]:
-        """List users with pagination."""
-        return await self.svc.list(page, size)
+        return await self._service.list(page, size)
 
     @router.get("/v1/users/{user_id}")
     async def get(self, user_id: UserId) -> User:
-        """Get a user by ID."""
-        return await self.svc.get(user_id)
+        return await self._service.get(user_id)
 
     @router.delete("/v1/users/{user_id}")
     async def delete(self, user_id: UserId) -> EmptyResponse:
-        """Delete a user by ID."""
-        await self.svc.delete(user_id)
+        await self._service.delete(user_id)
         return EmptyResponse()
 
 
