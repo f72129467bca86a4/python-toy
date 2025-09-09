@@ -14,27 +14,24 @@ class TagService:
         self._repo = repo
 
     async def create(self, payload: TagCreate) -> Tag:
-        """Create a new tag."""
-        async with transactional(self._repo.session):
-            tag_db = await self._repo.create(payload)
-            return TagMapper.to_domain(tag_db)
+        async with transactional(self._repo._session):
+            entity = TagMapper.to_entity(payload)
+            entity = await self._repo.create(entity)
+            return TagMapper.to_domain(entity)
 
     async def list(self, page: int, size: int) -> PageResponse[Tag]:
-        """List tags with pagination."""
-        async with transactional(self._repo.session):
-            items_db, total = await self._repo.list(page=page, size=size)
-            items = [TagMapper.to_domain(item) for item in items_db]
+        async with transactional(self._repo._session):
+            entities, total = await self._repo.list(page=page, size=size)
+            items = [TagMapper.to_domain(item) for item in entities]
             return PageResponse.create(items, total, page, size)
 
     async def get(self, entity_id: str) -> Tag:
-        """Get a tag by ID."""
-        async with transactional(self._repo.session):
-            tag_db = await self._repo.get_required(entity_id)
-            return TagMapper.to_domain(tag_db)
+        async with transactional(self._repo._session):
+            entity = await self._repo.get_required(entity_id)
+            return TagMapper.to_domain(entity)
 
     async def delete(self, entity_id: str) -> None:
-        """Delete a tag by ID."""
-        async with transactional(self._repo.session):
+        async with transactional(self._repo._session):
             await self._repo.delete(entity_id)
 
 

@@ -10,29 +10,33 @@ from python_toy.server.petstore.models import (
     TagCreate,
     UserCreate,
 )
-from python_toy.server.petstore.pet_repository import DBPetRepository
+from python_toy.server.petstore.pet_repository import PetRepository
 from python_toy.server.petstore.pet_service import PetService
 from python_toy.server.petstore.category_repository import CategoryRepository
 from python_toy.server.petstore.tag_repository import TagRepository
 from python_toy.server.petstore.user_repository import UserRepository
+from python_toy.server.petstore.mappers import CategoryMapper, TagMapper, UserMapper, PetMapper
 
 
-class TestCategoryRepository:
-    """Test CategoryRepository unit operations."""
+class TestCategoryService:
+    """Test CategoryService unit operations."""
 
     async def test_create_and_get_category(self, session_supplier) -> None:
         """Test creating and retrieving a category."""
+        from python_toy.server.petstore.category_service import CategoryService
+
         repo = CategoryRepository(session_supplier)
+        service = CategoryService(repo)
         payload = CategoryCreate(name="Test Category")
 
         # Create
-        category = await repo.create(payload)
+        category = await service.create(payload)
         assert category.name == "Test Category"
         assert category.id is not None
         category_id = category.id
 
         # Get by ID
-        retrieved = await repo.get(category_id)
+        retrieved = await service.get(category_id)
         assert retrieved is not None
         assert retrieved.name == "Test Category"
         assert retrieved.id == category_id
@@ -44,7 +48,8 @@ class TestCategoryRepository:
         # Create test data
         created_categories = []
         for i in range(3):
-            category = await repo.create(CategoryCreate(name=f"Category {i}"))
+            category_entity = CategoryMapper.to_entity(CategoryCreate(name=f"Category {i}"))
+            category = await repo.create(category_entity)
             created_categories.append(category)
 
         # Test pagination
@@ -60,7 +65,8 @@ class TestCategoryRepository:
     async def test_delete_category(self, session_supplier) -> None:
         """Test deleting a category."""
         repo = CategoryRepository(session_supplier)
-        category = await repo.create(CategoryCreate(name="To Delete"))
+        category_entity = CategoryMapper.to_entity(CategoryCreate(name="To Delete"))
+        category = await repo.create(category_entity)
 
         # Delete
         await repo.delete(category.id)
@@ -79,7 +85,8 @@ class TestTagRepository:
         payload = TagCreate(name="Test Tag")
 
         # Create
-        tag = await repo.create(payload)
+        tag_entity = TagMapper.to_entity(payload)
+        tag = await repo.create(tag_entity)
         assert tag.name == "Test Tag"
         assert tag.id is not None
 
@@ -120,7 +127,8 @@ class TestUserRepository:
         )
 
         # Create
-        user = await repo.create(payload)
+        user_entity = UserMapper.to_entity(payload)
+        user = await repo.create(user_entity)
         assert user.username == "testuser"
         assert user.email == "test@example.com"
         assert user.id is not None
@@ -136,12 +144,13 @@ class TestPetRepository:
 
     async def test_create_simple_pet(self, session_supplier) -> None:
         """Test creating a simple pet without relationships."""
-        repo = DBPetRepository(session_supplier)
+        repo = PetRepository(session_supplier)
         payload = PetCreate(
             name="Simple Pet", status="available", photo_urls=["http://example.com/photo.jpg"], tags=["simple"]
         )
 
-        pet = await repo.create(payload)
+        pet_entity = PetMapper.to_entity(payload)
+        pet = await repo.create(pet_entity)
         assert pet.name == "Simple Pet"
         assert pet.status == "available"
         assert pet.id is not None
@@ -153,8 +162,9 @@ class TestPetRepository:
         category_repo = CategoryRepository(session_supplier)
         user_repo = UserRepository(session_supplier)
 
-        category = await category_repo.create(CategoryCreate(name="Test Category"))
-        user = await user_repo.create(
+        category_entity = CategoryMapper.to_entity(CategoryCreate(name="Test Category"))
+        category = await category_repo.create(category_entity)
+        user_entity = UserMapper.to_entity(
             UserCreate(
                 username="petowner",
                 first_name="Pet",
@@ -163,24 +173,27 @@ class TestPetRepository:
                 password="password123",
             )
         )
+        user = await user_repo.create(user_entity)
 
         # Create pet with relationships
-        repo = DBPetRepository(session_supplier)
+        repo = PetRepository(session_supplier)
         payload = PetCreate(
             name="Pet with Relations", status="available", category_id=category.id, owner_id=user.id, tags=["family"]
         )
 
-        pet = await repo.create(payload)
+        pet_entity = PetMapper.to_entity(payload)
+        pet = await repo.create(pet_entity)
         assert pet.name == "Pet with Relations"
         assert pet.category_id == category.id
         assert pet.owner_id == user.id
 
     async def test_pet_crud_operations(self, session_supplier) -> None:
         """Test basic pet CRUD operations."""
-        repo = DBPetRepository(session_supplier)
+        repo = PetRepository(session_supplier)
 
         # Create
-        pet = await repo.create(PetCreate(name="CRUD Pet", status="available"))
+        pet_entity = PetMapper.to_entity(PetCreate(name="CRUD Pet", status="available"))
+        pet = await repo.create(pet_entity)
         pet_id = pet.id
 
         # Read
@@ -202,7 +215,7 @@ class TestPetService:
     async def test_service_create_pet_with_tag_creation(self, session_supplier) -> None:
         """Test service layer creates tags automatically."""
         # Setup repositories
-        pet_repo = DBPetRepository(session_supplier)
+        pet_repo = PetRepository(session_supplier)
         tag_repo = TagRepository(session_supplier)
         category_repo = CategoryRepository(session_supplier)
         user_repo = UserRepository(session_supplier)
@@ -230,11 +243,13 @@ class TestRepositoryExceptionHandling:
 
         # Create first category
         payload = CategoryCreate(name="Unique Category")
-        await repo.create(payload)
+        category_entity = CategoryMapper.to_entity(payload)
+        await repo.create(category_entity)
 
         # Try to create duplicate - should raise DuplicateEntityException
+        category_entity2 = CategoryMapper.to_entity(payload)
         with pytest.raises(DuplicateEntityException) as exc_info:
-            await repo.create(payload)
+            await repo.create(category_entity2)
 
         exception = exc_info.value
         assert exception.entity_type == "CategoryEntity"
@@ -243,13 +258,14 @@ class TestRepositoryExceptionHandling:
 
     async def test_foreign_key_violation_in_repository(self, session_supplier) -> None:
         """Test that foreign key violations raise ForeignKeyViolationException."""
-        repo = DBPetRepository(session_supplier)
+        repo = PetRepository(session_supplier)
 
         # Try to create pet with non-existent category
         payload = PetCreate(name="Test Pet", status="available", category_id="non-existent-category-id")
+        pet_entity = PetMapper.to_entity(payload)
 
         with pytest.raises(ForeignKeyViolationException) as exc_info:
-            await repo.create(payload)
+            await repo.create(pet_entity)
 
         exception = exc_info.value
         assert exception.field == "category_id"

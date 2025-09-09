@@ -1,7 +1,7 @@
 """Test query optimization patterns for repository and service layers."""
 
 from python_toy.server.petstore.models import PetCreate
-from python_toy.server.petstore.pet_repository import DBPetRepository
+from python_toy.server.petstore.pet_repository import PetRepository
 from python_toy.server.petstore.pet_service import PetService
 from python_toy.server.petstore.query_options import PetQueryOptions
 from python_toy.server.petstore.tag_repository import TagRepository
@@ -44,21 +44,24 @@ class TestQueryOptions:
 
     async def test_pet_repository_query_options(self, session_supplier) -> None:
         """Test repository query options integration."""
-        repo = DBPetRepository(session_supplier)
+        repo = PetRepository(session_supplier)
 
         # Create a test pet
         payload = PetCreate(name="Query Test Pet", status="available")
-        pet_db = await repo.create(payload)
+        from python_toy.server.petstore.mappers import PetMapper
+
+        entity = PetMapper.to_entity(payload)
+        entity = await repo.create(entity)
 
         # Test minimal loading (no relations eagerly loaded)
         minimal_options = PetQueryOptions.minimal()
-        pet_minimal = await repo.get_with_options(pet_db.id, minimal_options)
+        pet_minimal = await repo.get_with_options(entity.id, minimal_options)
         assert pet_minimal.name == "Query Test Pet"
-        assert pet_minimal.id == pet_db.id
+        assert pet_minimal.id == entity.id
 
         # Test selective loading - category only
         category_options = PetQueryOptions.with_category()
-        pet_with_category = await repo.get_with_options(pet_db.id, category_options)
+        pet_with_category = await repo.get_with_options(entity.id, category_options)
         assert pet_with_category.name == "Query Test Pet"
 
         # Verify options configuration
@@ -69,7 +72,7 @@ class TestQueryOptions:
     async def test_pet_service_optimized_operations(self, session_supplier) -> None:
         """Test service layer optimization features."""
         # Setup all repositories
-        pet_repo = DBPetRepository(session_supplier)
+        pet_repo = PetRepository(session_supplier)
         tag_repo = TagRepository(session_supplier)
         category_repo = CategoryRepository(session_supplier)
         user_repo = UserRepository(session_supplier)

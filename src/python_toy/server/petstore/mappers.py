@@ -6,12 +6,27 @@ Each mapper handles conversions for a specific domain entity.
 
 from __future__ import annotations
 
-from .models import Pet, Category, User, Tag
+import json
+import uuid
+
+from .models import Pet, Category, User, Tag, PetCreate, CategoryCreate, UserCreate, TagCreate
 from .db_models import PetEntity, CategoryEntity, UserEntity, TagEntity
 
 
 class PetMapper:
     """Mapper for Pet domain model conversions."""
+
+    @staticmethod
+    def to_entity(create_model: PetCreate) -> PetEntity:
+        """Convert PetCreate to PetEntity for database storage."""
+        return PetEntity(
+            id=str(uuid.uuid4()),
+            name=create_model.name,
+            category_id=create_model.category_id,
+            status=create_model.status,
+            photo_urls=json.dumps(list(create_model.photo_urls or [])),
+            owner_id=create_model.owner_id,
+        )
 
     @staticmethod
     def to_domain(pet_db: PetEntity) -> Pet:
@@ -69,6 +84,14 @@ class CategoryMapper:
     """Mapper for Category domain model conversions."""
 
     @staticmethod
+    def to_entity(create_model: CategoryCreate) -> CategoryEntity:
+        """Convert CategoryCreate to CategoryEntity for database storage."""
+        return CategoryEntity(
+            id=str(uuid.uuid4()),
+            name=create_model.name,
+        )
+
+    @staticmethod
     def to_domain(category_db: CategoryEntity) -> Category:
         """Convert Category to Category domain model."""
         return Category(
@@ -79,6 +102,19 @@ class CategoryMapper:
 
 class UserMapper:
     """Mapper for User domain model conversions."""
+
+    @staticmethod
+    def to_entity(create_model: UserCreate) -> UserEntity:
+        """Convert UserCreate to UserEntity for database storage."""
+        return UserEntity(
+            id=str(uuid.uuid4()),
+            username=create_model.username,
+            first_name=create_model.first_name,
+            last_name=create_model.last_name,
+            email=create_model.email,
+            password=create_model.password,
+            phone=create_model.phone,
+        )
 
     @staticmethod
     def to_domain(user_db: UserEntity) -> User:
@@ -95,6 +131,14 @@ class UserMapper:
 
 class TagMapper:
     """Mapper for Tag domain model conversions."""
+
+    @staticmethod
+    def to_entity(create_model: TagCreate) -> TagEntity:
+        """Convert TagCreate to TagEntity for database storage."""
+        return TagEntity(
+            id=str(uuid.uuid4()),
+            name=create_model.name,
+        )
 
     @staticmethod
     def to_domain(tag_db: TagEntity) -> Tag:
